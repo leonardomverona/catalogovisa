@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Consulta CNAEs - Vigilância Sanitária MG</title>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #2A5C82;
+      --secondary: #5BA4E6;
+      --background: #f8f9fa;
+      --text: #2c3e50;
+    }
+    /* Estilos gerais */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--background);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .header h1 {
+      color: var(--primary);
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      background: #f4f7f9;
+      padding: 1.5rem;
+      border-radius: 0.8rem;
+    }
+    .filter-group { position: relative; }
+    .filter-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .search-input {
+      width: 100%;
+      padding: 0.8rem 1.2rem;
+      border: 2px solid #e0e7ed;
+      border-radius: 0.6rem;
+      transition: all 0.3s ease;
+      background: white;
+    }
+    .search-input:focus {
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 3px rgba(91, 164, 230, 0.2);
+      outline: none;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 0.8rem;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      min-width: 1000px;
+    }
+    .data-table th, .data-table td {
+      padding: 1rem 1.5rem;
+      text-align: left;
+    }
+    .data-table th {
+      background: var(--primary);
+      color: white;
+      position: sticky;
+      top: 0;
+      cursor: pointer;
+    }
+    .data-table td {
+      border-bottom: 1px solid #f0f3f5;
+    }
+    .data-table tr:hover { background: #f8fafc; }
+    .risk-badge {
+      display: inline-block;
+      padding: 0.3rem 0.8rem;
+      border-radius: 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .risk-I { background: #c8e6c9; color: #2e7d32; }
+    .risk-II { background: #fff3e0; color: #ef6c00; }
+    .risk-III { background: #ffcdd2; color: #c62828; }
+    .action-btn, .conditional-risk-btn {
+      padding: 0.5rem 1rem;
+      margin-top: 0.5rem;
+      border: none;
+      border-radius: 0.4rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s ease;
+      background: var(--secondary);
+      color: var(--primary);
+    }
+    .action-btn:hover, .conditional-risk-btn:hover { 
+      background: var(--primary); 
+      color: white; 
+    }
+    .no-results {
+      text-align: center;
+      padding: 2rem;
+      color: #7f8c8d;
+      font-size: 1.1rem;
+    }
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      justify-content: flex-end;
+    }
+    .btn {
+      padding: 0.7rem 1.5rem;
+      border: none;
+      border-radius: 0.6rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-secondary { background: #e0e7ed; color: var(--text); }
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+    @media (max-width: 768px) {
+      .container { margin: 1rem; padding: 1rem; }
+      .header h1 { font-size: 1.8rem; }
+    }
+    /* Estilos para os modais */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 15% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      border-radius: 0.8rem;
+    }
+    .close-button {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close-button:hover { color: black; }
+    .legislation-details { margin-top: 1rem; }
+    .legislation-details h4 { color: var(--primary); margin-bottom: 0.5rem; }
+    .legislation-details ul { list-style-type: disc; padding-left: 1.5rem; }
+    .data-table th.sort-asc::after { content: " ▲"; }
+    .data-table th.sort-desc::after { content: " ▼"; }
+    /* Estilos para o modal de risco */
+    #riskModal .modal-content {
+      width: 90%;
+      max-width: 600px;
+    }
+    #riskModal .modal-header {
+      padding: 1rem;
+      border-bottom: 1px solid #eee;
+      text-align: center;
+    }
+    #riskModal .modal-header h2 {
+      color: var(--primary);
+      margin-bottom: 0;
+    }
+    #riskModal .modal-question {
+      padding: 1rem;
+      border-bottom: 1px solid #eee;
+    }
+    #riskModal .modal-question label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+    #riskModal .modal-options label {
+      display: block;
+      margin-bottom: 0.3rem;
+      font-weight: normal;
+    }
+    #riskModal .modal-buttons {
+      padding: 1rem;
+      text-align: right;
+    }
+    #riskModal .modal-buttons button { margin-left: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Consulta CNAEs - Vigilância Sanitária MG</h1>
+      <p>Pesquise, filtre e avalie condicionantes para determinação do risco</p>
+    </div>
+    <div class="filters">
+      <div class="filter-group">
+        <label class="filter-label" for="search">Pesquisar:</label>
+        <input type="text" id="search" class="search-input" placeholder="Digite código ou descrição..." oninput="filterTable()">
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="section">Seção:</label>
+        <select id="section" class="search-input" onchange="filterTable()">
+          <option value="">Todas as Seções</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="risk">Nível de Risco:</label>
+        <select id="risk" class="search-input" onchange="filterTable()">
+          <option value="">Todos os Níveis</option>
+          <option>I</option>
+          <option>II</option>
+          <option>III</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table" data-sort-column="" data-sort-order="">
+        <thead>
+          <tr>
+            <th onclick="sortTable(0)">Seção</th>
+            <th onclick="sortTable(1)">CNAE</th>
+            <th onclick="sortTable(2)">Descrição</th>
+            <th>Legislação</th>
+            <th onclick="sortTable(4)">Nível de Risco</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="noResults" class="no-results">Nenhum resultado encontrado</div>
+    </div>
+    <div class="controls">
+      <button class="btn btn-secondary" onclick="resetFilters()">Limpar Filtros</button>
+      <button class="btn btn-primary" onclick="exportData()">Exportar CSV</button>
+    </div>
+  </div>
+
+  <!-- Modal de Legislação -->
+  <div id="legislationModal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" onclick="closeLegislationModal()">&times;</span>
+      <div class="legislation-details">
+        <h4 id="legislationModalTitle">Legislação para o CNAE:</h4>
+        <div id="legislationModalBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Avaliação de Risco -->
+  <div id="riskModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Avaliação de Risco</h2>
+      </div>
+      <div id="riskModalQuestions"></div>
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveRisk()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Dados do catálogo (exemplo)
+    const rawCnaeData = [
+      {
+        "CNAE": "0892-4/03",
+        "Descrição": "Refino e outros tratamentos do sal",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1032-5/01",
+        "Descrição": "Fabricação de conservas de palmito",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1041-4/00",
+        "Descrição": "Fabricação de óleos vegetais em bruto, exceto óleo de milho",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1042-2/00",
+        "Descrição": "Fabricação de óleos vegetais refinados, exceto óleo de milho",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1062-7/00",
+        "Descrição": "Moagem de trigo e fabricação de derivados",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1065-1/02",
+        "Descrição": "Fabricação de óleo de milho em bruto",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1065-1/03",
+        "Descrição": "Fabricação de óleo de milho refinado",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1072-4/01",
+        "Descrição": "Fabricação de açúcar de cana refinado",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1121-6/00",
+        "Descrição": "Fabricação de águas envasadas",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1122-4/04",
+        "Descrição": "Fabricação de bebidas isotônicas",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1033-3/02",
+        "Descrição": "Fabricação de sucos de frutas, hortaliças e legumes, exceto concentrados",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1043-1/00",
+        "Descrição": "Fabricação de margarina e outras gorduras vegetais e de óleos não-comestíveis de animais",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1072-4/02",
+        "Descrição": "Fabricação de açúcar de cereais (dextrose) e de beterraba",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1092-9/00",
+        "Descrição": "Fabricação de biscoitos e bolachas",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": [
+          {
+            "id": "q1",
+            "text": "A produção é realizada por métodos artesanais?",
+            "options": [
+              { "value": "SIM", "risk": 1 },
+              { "value": "NÃO", "risk": 3 }
+            ]
+          }
+        ],
+        "legislation": ["Lei nº 1234/56", "Portaria nº 789/90"],
+        "legislationDetails": {
+          "Lei nº 1234/56": "<ul><li>Art. 1: Disposições gerais sobre produção de alimentos.</li><li>Art. 2: Requisitos mínimos de higiene.</li></ul>",
+          "Portaria nº 789/90": "<ul><li>Item 1: Procedimentos operacionais.</li><li>Item 2: Fiscalização e penalidades.</li></ul>"
+        }
+      },
+      {
+        "CNAE": "1093-7/01",
+        "Descrição": "Fabricação de produtos derivados do cacau e de chocolates",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": [
+          {
+            "id": "q1",
+            "text": "A produção é realizada por métodos artesanais?",
+            "options": [
+              { "value": "SIM", "risk": 1 },
+              { "value": "NÃO", "risk": 3 }
+            ]
+          }
+        ],
+        "legislation": ["Lei nº 2345/67", "Portaria nº 890/91"],
+        "legislationDetails": {
+          "Lei nº 2345/67": "<ul><li>Art. 3: Normas para fabricação de produtos derivados do cacau.</li><li>Art. 4: Segurança alimentar.</li></ul>",
+          "Portaria nº 890/91": "<ul><li>Item 1: Controle de qualidade.</li><li>Item 2: Procedimentos de rastreabilidade.</li></ul>"
+        }
+      },
+      {
+        "CNAE": "1093-7/02",
+        "Descrição": "Fabricação de frutas cristalizadas, balas e semelhantes",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": [
+          {
+            "id": "q1",
+            "text": "A produção é realizada por métodos artesanais?",
+            "options": [
+              { "value": "SIM", "risk": 1 },
+              { "value": "NÃO", "risk": 3 }
+            ]
+          }
+        ]
+      },
+      {
+        "CNAE": "8610-1/01",
+        "Descrição": "Atividades de atendimento hospitalar, exceto pronto-socorro e unidades para atendimento a urgências",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8610-1/02",
+        "Descrição": "Atividades de atendimento em pronto-socorro e unidades hospitalares para atendimento a urgências",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8630-5/07",
+        "Descrição": "Atividades de reprodução humana assistida",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8640-2/03",
+        "Descrição": "Serviços de diálise e nefrologia",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8640-2/04",
+        "Descrição": "Serviços de tomografia",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8640-2/06",
+        "Descrição": "Serviços de ressonância magnética",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8640-2/10",
+        "Descrição": "Serviços de quimioterapia",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8640-2/11",
+        "Descrição": "Serviços de radioterapia",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8640-2/12",
+        "Descrição": "Serviços de hemoterapia",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8640-2/14",
+        "Descrição": "Serviços de bancos de células e tecidos humanos",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8640-2/99",
+        "Descrição": "Serviços de complementação diagnóstica e terapêutica",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8650-0/07",
+        "Descrição": "Atividades de terapia de nutrição enteral e parenteral",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8129-0/00",
+        "Descrição": "Atividades de limpeza não especificadas anteriormente",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8690-9/02",
+        "Descrição": "Atividades de bancos de leite humano",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1742-7/01",
+        "Descrição": "Fabricação de fraldas descartáveis",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "1742-7/02",
+        "Descrição": "Fabricação de absorventes higiênicos",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "2052-5/00",
+        "Descrição": "Fabricação de desinfestantes domissanitários",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "2061-4/00",
+        "Descrição": "Fabricação de sabões e detergentes sintéticos",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "2062-2/00",
+        "Descrição": "Fabricação de produtos de limpeza e polimento",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "2063-1/00",
+        "Descrição": "Fabricação de cosméticos, produtos de perfumaria e de higiene pessoal",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "2110-6/00",
+        "Descrição": "Fabricação de produtos farmoquímicos",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "2123-8/00",
+        "Descrição": "Fabricação de preparações farmacêuticas",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "2660-4/00",
+        "Descrição": "Fabricação de aparelhos eletromédicos e equipamentos de irradiação",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "3250-7/06",
+        "Descrição": "Serviços de prótese dentária",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "4729-6/01",
+        "Descrição": "Tabacaria",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "4774-1/00",
+        "Descrição": "Comércio varejista de artigos de óptica",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "5222-2/00",
+        "Descrição": "Terminais rodoviários e ferroviários",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "5510-8/01",
+        "Descrição": "Hotéis",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "5510-8/02",
+        "Descrição": "Apart-hotéis",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "5510-8/03",
+        "Descrição": "Motéis",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "5590-6/01",
+        "Descrição": "Albergues, exceto assistenciais",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "5590-6/02",
+        "Descrição": "Campings",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "5590-6/03",
+        "Descrição": "Pensões (alojamento)",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "5590-6/99",
+        "Descrição": "Outros alojamentos não especificados anteriormente",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8121-4/00",
+        "Descrição": "Limpeza em prédios e em domicílios",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8122-2/00",
+        "Descrição": "Imunização e controle de pragas urbanas",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8511-2/00",
+        "Descrição": "Educação infantil - creche",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8512-1/00",
+        "Descrição": "Educação infantil - pré-escola",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8513-9/00",
+        "Descrição": "Ensino fundamental",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8520-1/00",
+        "Descrição": "Ensino médio",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8531-7/00",
+        "Descrição": "Educação superior - graduação",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8532-5/00",
+        "Descrição": "Educação superior - graduação e pós-graduação",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8533-3/00",
+        "Descrição": "Educação superior - pós-graduação e extensão",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8541-4/00",
+        "Descrição": "Educação profissional de nível técnico",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8542-2/00",
+        "Descrição": "Educação profissional de nível tecnológico",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8591-1/00",
+        "Descrição": "Ensino de esportes",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8711-5/02",
+        "Descrição": "Instituições de longa permanência para idosos",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8711-5/05",
+        "Descrição": "Condomínios residenciais para idosos",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8730-1/01",
+        "Descrição": "Orfanatos",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8730-1/02",
+        "Descrição": "Albergues assistenciais",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8730-1/99",
+        "Descrição": "Atividades de assistência social prestadas em residências coletivas e particulares não especificadas anteriormente",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "8800-6/00",
+        "Descrição": "Serviços de assistência social sem alojamento",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9312-3/00",
+        "Descrição": "Clubes sociais, esportivos e similares",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9313-1/00",
+        "Descrição": "Atividades de condicionamento físico",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9321-2/00",
+        "Descrição": "Parques de diversão e parques temáticos",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9601-7/01",
+        "Descrição": "Lavanderias",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9601-7/03",
+        "Descrição": "Toalheiros",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9602-5/01",
+        "Descrição": "Cabeleireiros, manicure e pedicure",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9602-5/02",
+        "Descrição": "Atividades de estética e outros serviços de cuidados com a beleza",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9603-3/01",
+        "Descrição": "Gestão e manutenção de cemitérios",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9603-3/02",
+        "Descrição": "Serviços de cremação",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9603-3/03",
+        "Descrição": "Serviços de sepultamento",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9603-3/04",
+        "Descrição": "Serviços de funerárias",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9603-3/99",
+        "Descrição": "Atividades funerárias e serviços relacionados não especificados anteriormente",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9609-2/05",
+        "Descrição": "Atividades de sauna e banhos",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "9609-2/06",
+        "Descrição": "Serviços de tatuagem e colocação de piercing",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "3312-1/03",
+        "Descrição": "Manutenção e reparação de aparelhos eletromédicos e equipamentos de irradiação",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "4771-7/01",
+        "Descrição": "Comércio varejista de produtos farmacêuticos, sem manipulação de fórmulas",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "4772-5/00",
+        "Descrição": "Comércio varejista de cosméticos, produtos de perfumaria e de higiene pessoal",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "4773-3/00",
+        "Descrição": "Comércio varejista de artigos médicos e ortopédicos",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "4789-0/05",
+        "Descrição": "Comércio varejista de produtos saneantes domissanitários",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "7729-2/03",
+        "Descrição": "Aluguel de material médico",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "7739-0/02",
+        "Descrição": "Aluguel de equipamentos científicos, médicos e hospitalares, sem operador",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "4729-6/02",
+        "Descrição": "Comércio varejista de mercadorias em lojas de conveniência",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "4789-0/99",
+        "Descrição": "Comércio varejista de outros produtos não especificados anteriormente",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "5310-5/01",
+        "Descrição": "Atividades do Correio Nacional",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      },
+      {
+        "CNAE": "5310-5/02",
+        "Descrição": "Atividades de franqueadas e permissionárias do Correio Nacional",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": []
+      }
+      // NOVAS ENTRADAS COM EXEMPLOS DE LEGISLAÇÃO
+      ,
+      {
+        "CNAE": "9999-9/99",
+        "Descrição": "Licenciamento Sanitário Simplificado - Risco I e II",
+        "Observação": "",
+        "RiscoFixo": "1",
+        "Perguntas": [],
+        "legislation": [
+          "RESOLUÇÃO SESMG Nº 8.765, DE 16 DE MAIO DE 2023",
+          "Resolução estadual n° 7426_2021",
+          "Resolução CGSIM nº 62_2020",
+          "Resolução comitê REDESIM MG – 2020",
+          "Decreto MG n° 48036 _ 2020",
+          "INSTRUÇÃO NORMATIVA – IN nº 66, de 1º de setembro de 2020",
+          "Resolução CGSIM nº 59_2020",
+          "Resolução CGSIM nº 57_2020",
+          "Resolução_51_2019_alterada_pela_57_2020",
+          "Resolução estadual n° 6.963_2019",
+          "Lei n° 13.874_2019",
+          "Lei nº 11.598_2007"
+        ],
+        "legislationDetails": {
+          "RESOLUÇÃO SESMG Nº 8.765, DE 16 DE MAIO DE 2023": "<ul><li>Estabelece diretrizes para o licenciamento simplificado.</li><li>Define critérios para Risco I e II.</li></ul>",
+          "Resolução estadual n° 7426_2021": "<ul><li>Dispõe sobre o processo de licenciamento para estabelecimentos de baixo risco.</li></ul>",
+          "Resolução CGSIM nº 62_2020": "<ul><li>Normatiza procedimentos técnicos para licenciamento.</li></ul>",
+          "Resolução comitê REDESIM MG – 2020": "<ul><li>Estabelece integrações de sistemas para licenciamento sanitário.</li></ul>",
+          "Decreto MG n° 48036 _ 2020": "<ul><li>Dispõe sobre a organização e funcionamento do licenciamento sanitário.</li></ul>",
+          "INSTRUÇÃO NORMATIVA – IN nº 66, de 1º de setembro de 2020": "<ul><li>Orientações para aplicação do licenciamento simplificado.</li></ul>",
+          "Resolução CGSIM nº 59_2020": "<ul><li>Requisitos técnicos para licenciamento de estabelecimentos.</li></ul>",
+          "Resolução CGSIM nº 57_2020": "<ul><li>Critérios para avaliação de risco.</li></ul>",
+          "Resolução_51_2019_alterada_pela_57_2020": "<ul><li>Atualização dos critérios de risco para licenciamento.</li></ul>",
+          "Resolução estadual n° 6.963_2019": "<ul><li>Normas complementares para licenciamento sanitário.</li></ul>",
+          "Lei n° 13.874_2019": "<ul><li>Dispõe sobre a política de inovação e simplificação administrativa.</li></ul>",
+          "Lei nº 11.598_2007": "<ul><li>Estabelece normas gerais para o licenciamento sanitário.</li></ul>"
+        }
+      },
+      {
+        "CNAE": "8888-8/88",
+        "Descrição": "Licenciamento Sanitário Simplificado - Risco III",
+        "Observação": "",
+        "RiscoFixo": "3",
+        "Perguntas": [],
+        "legislation": [
+          "Concessão e renovação de alvará sanitário - Orientações",
+          "RAPA: Requerimento de aprovação de projeto arquitetônico",
+          "Anexo II da Resolução 5711/17",
+          "Anexo I da Resolução 5711/17",
+          "Manual VISA Digital - Versão Requerente Versão 1.0",
+          "RAPA: Requerimento de aprovação do projeto arquitetônico",
+          "Manual VISA Digital Módulo RAPA - Versão Requerente Versão 1.0"
+        ],
+        "legislationDetails": {
+          "Concessão e renovação de alvará sanitário - Orientações": "<ul><li>Detalha os procedimentos para a concessão e renovação do alvará sanitário.</li></ul>",
+          "RAPA: Requerimento de aprovação de projeto arquitetônico": "<ul><li>Instruções para submissão e aprovação de projetos arquitetônicos de estabelecimentos.</li></ul>",
+          "Anexo II da Resolução 5711/17": "<ul><li>Documentos e requisitos complementares para o licenciamento.</li></ul>",
+          "Anexo I da Resolução 5711/17": "<ul><li>Lista de verificação e formulários necessários.</li></ul>",
+          "Manual VISA Digital - Versão Requerente Versão 1.0": "<ul><li>Guia para utilização do sistema VISA Digital no processo de licenciamento.</li></ul>",
+          "RAPA: Requerimento de aprovação do projeto arquitetônico": "<ul><li>Procedimentos para aprovação do projeto arquitetônico específico.</li></ul>",
+          "Manual VISA Digital Módulo RAPA - Versão Requerente Versão 1.0": "<ul><li>Orientações para o módulo RAPA do sistema VISA Digital.</li></ul>"
+        }
+      }
+    ];
+
+    // Função para obter a seção com base nos dois primeiros dígitos do código
+    function getSectionFromCNAE(cnaeCode) {
+      const firstTwoDigits = cnaeCode.substring(0, 2);
+      if (firstTwoDigits >= '01' && firstTwoDigits <= '03') return 'Agricultura, Pecuária, Produção Florestal, Pesca e Aquicultura';
+      if (firstTwoDigits >= '05' && firstTwoDigits <= '09') return 'Indústrias Extrativas';
+      if (firstTwoDigits >= '10' && firstTwoDigits <= '33') return 'Indústrias de Transformação';
+      if (firstTwoDigits >= '35' && firstTwoDigits <= '39') return 'Eletricidade, Gás e Outras Utilidades';
+      if (firstTwoDigits >= '41' && firstTwoDigits <= '43') return 'Construção';
+      if (firstTwoDigits >= '45' && firstTwoDigits <= '47') return 'Comércio; Reparação de Veículos Automotores e Motocicletas';
+      if (firstTwoDigits >= '49' && firstTwoDigits <= '53') return 'Transporte, Armazenagem e Correio';
+      if (firstTwoDigits >= '55' && firstTwoDigits <= '56') return 'Alojamento e Alimentação';
+      if (firstTwoDigits >= '58' && firstTwoDigits <= '63') return 'Informação e Comunicação';
+      if (firstTwoDigits >= '64' && firstTwoDigits <= '66') return 'Atividades Financeiras, de Seguros e Serviços Relacionados';
+      if (firstTwoDigits >= '68' && firstTwoDigits <= '69') return 'Atividades Imobiliárias';
+      if (firstTwoDigits >= '70' && firstTwoDigits <= '76') return 'Atividades Profissionais, Científicas e Técnicas';
+      if (firstTwoDigits >= '77' && firstTwoDigits <= '82') return 'Atividades Administrativas e Serviços Complementares';
+      if (firstTwoDigits === '84') return 'Administração Pública, Defesa e Seguridade Social';
+      if (firstTwoDigits === '85') return 'Educação';
+      if (firstTwoDigits >= '86' && firstTwoDigits <= '87') return 'Saúde Humana e Serviços Sociais';
+      if (firstTwoDigits === '88') return 'Serviços Sociais Sem Alojamento';
+      if (firstTwoDigits >= '90' && firstTwoDigits <= '93') return 'Artes, Cultura, Esporte e Recreação';
+      if (firstTwoDigits === '94') return 'Organismos Internacionais e Outras Instituições Extraterritoriais';
+      if (firstTwoDigits >= '95' && firstTwoDigits <= '96') return 'Outras Atividades de Serviços';
+      if (firstTwoDigits === '97') return 'Serviços Domésticos';
+      if (firstTwoDigits === '99') return 'Organismos Internacionais e Outras Instituições Extraterritoriais';
+      return 'Outra Seção';
+    }
+
+    // Mapeamento dos dados com as propriedades necessárias
+    const cnaeData = rawCnaeData.map(item => {
+      const perguntas = (item.Perguntas && item.Perguntas.length > 0) ? item.Perguntas.map(q => ({
+        id: q.id,
+        text: q.text,
+        options: q.options
+      })) : [];
+      let riskLevel = '';
+      if (item.RiscoFixo === "1") {
+        riskLevel = 'I';
+      } else if (item.RiscoFixo === "2") {
+        riskLevel = 'II';
+      } else if (item.RiscoFixo === "3") {
+        riskLevel = 'III';
+      }
+      return {
+        section: getSectionFromCNAE(item.CNAE),
+        code: item.CNAE,
+        description: item.Descrição,
+        observation: item.Observação,
+        legislation: item.legislation || [],
+        legislationDetails: item.legislationDetails || {},
+        risk: riskLevel,
+        hasQuestions: perguntas.length > 0,
+        questions: perguntas
+      };
+    });
+
+    let currentIndex = null;
+
+    // Inicializa a tabela e popula o filtro de seções
+    function initTable() {
+      const tbody = document.getElementById('tableBody');
+      const sectionFilter = document.getElementById('section');
+      const uniqueSections = [...new Set(cnaeData.map(item => item.section))].sort();
+      sectionFilter.innerHTML = '<option value="">Todas as Seções</option>';
+      uniqueSections.forEach(section => sectionFilter.add(new Option(section, section)));
+
+      tbody.innerHTML = cnaeData.map((item, index) => `
+        <tr data-index="${index}">
+          <td>${item.section}</td>
+          <td>${item.code}</td>
+          <td>${item.description}</td>
+          <td>
+            ${item.legislation.map(leg => `<button class="action-btn" onclick="openLegislationModal('${item.code}', '${leg}')">${leg}</button>`).join(' ')}
+          </td>
+          <td>
+            ${item.hasQuestions 
+              ? `<button class="conditional-risk-btn" onclick="openModal(${index})">Avaliar Risco</button>` 
+              : (item.risk ? `<span class="risk-badge risk-${item.risk}">${item.risk}</span>` : '')
+            }
+          </td>
+        </tr>
+      `).join('');
+      filterTable();
+    }
+
+    // Filtra a tabela com base nos inputs e nos filtros selecionados
+    function filterTable() {
+      const searchTerm = document.getElementById('search').value.toLowerCase();
+      const sectionFilter = document.getElementById('section').value;
+      const riskFilter = document.getElementById('risk').value;
+      document.querySelectorAll('#tableBody tr').forEach(row => {
+        const [section, code, desc, , riskCell] = row.children;
+        const matchesSearch = code.textContent.toLowerCase().includes(searchTerm) ||
+                              desc.textContent.toLowerCase().includes(searchTerm);
+        const matchesSection = !sectionFilter || section.textContent === sectionFilter;
+        let matchesRisk = true;
+        if (riskFilter) {
+          const riskBadge = riskCell.querySelector('.risk-badge');
+          matchesRisk = riskBadge ? (riskBadge.textContent === riskFilter) : false;
+        }
+        row.style.display = (matchesSearch && matchesSection && matchesRisk) ? '' : 'none';
+      });
+      document.getElementById('noResults').style.display =
+        [...document.querySelectorAll('#tableBody tr')].every(tr => tr.style.display === 'none')
+          ? 'block' : 'none';
+      saveFilters();
+    }
+
+    // Modal de Legislação
+    function openLegislationModal(cnaeCode, legislationKey) {
+      const cnaeItem = cnaeData.find(item => item.code === cnaeCode);
+      if (cnaeItem && cnaeItem.legislationDetails && cnaeItem.legislationDetails[legislationKey]) {
+        document.getElementById('legislationModalTitle').textContent = `Legislação para o CNAE: ${cnaeCode} - ${legislationKey}`;
+        document.getElementById('legislationModalBody').innerHTML = cnaeItem.legislationDetails[legislationKey];
+        document.getElementById('legislationModal').style.display = 'block';
+      } else {
+        alert(`Detalhes da legislação "${legislationKey}" não encontrados para o CNAE "${cnaeCode}".`);
+      }
+    }
+
+    function closeLegislationModal() {
+      document.getElementById('legislationModal').style.display = 'none';
+    }
+
+    // Modal de Avaliação de Risco
+    function openModal(index) {
+      currentIndex = index;
+      const currentCNAE = cnaeData[index];
+      const questionsContainer = document.getElementById('riskModalQuestions');
+      questionsContainer.innerHTML = '';
+      if (currentCNAE && currentCNAE.questions && currentCNAE.questions.length > 0) {
+        document.querySelector('#riskModal .modal-header h2').textContent = `Avaliação de Risco para o CNAE: ${currentCNAE.code}`;
+        currentCNAE.questions.forEach((question, qIndex) => {
+          const questionDiv = document.createElement('div');
+          questionDiv.classList.add('modal-question');
+          questionDiv.innerHTML = `<label>${question.text}</label>`;
+          const optionsDiv = document.createElement('div');
+          optionsDiv.classList.add('modal-options');
+          question.options.forEach(option => {
+            optionsDiv.innerHTML += `
+              <label>
+                <input type="radio" name="q_${qIndex}" value="${option.value}" data-risk="${option.risk}">
+                ${option.value}
+              </label>
+            `;
+          });
+          questionDiv.appendChild(optionsDiv);
+          questionsContainer.appendChild(questionDiv);
+        });
+        document.getElementById('riskModal').style.display = 'flex';
+      } else {
+        alert('Não há perguntas para este CNAE.');
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('riskModal').style.display = 'none';
+      currentIndex = null;
+    }
+
+    // Salva a avaliação de risco com base nas respostas das perguntas
+    function saveRisk() {
+      if (currentIndex === null) return;
+      const currentCNAE = cnaeData[currentIndex];
+      let finalRisk = null;
+      if (currentCNAE && currentCNAE.questions) {
+        let answers = [];
+        let allAnswered = true;
+        currentCNAE.questions.forEach((question, index) => {
+          const selectedOption = document.querySelector(`input[name="q_${index}"]:checked`);
+          if (selectedOption) {
+            answers.push({ questionId: question.id, value: selectedOption.value, risk: parseInt(selectedOption.dataset.risk) });
+          } else {
+            allAnswered = false;
+          }
+        });
+        if (!allAnswered) {
+          alert('Por favor, responda todas as perguntas.');
+          return;
+        }
+        // Determina o risco final com base no maior risco das respostas
+        let highestRisk = 0;
+        answers.forEach(answer => {
+          if (!isNaN(answer.risk) && answer.risk > highestRisk) {
+            highestRisk = answer.risk;
+          }
+        });
+        if (highestRisk === 1) {
+          finalRisk = 'I';
+        } else if (highestRisk === 2) {
+          finalRisk = 'II';
+        } else if (highestRisk === 3) {
+          finalRisk = 'III';
+        }
+      }
+      if (finalRisk) {
+        cnaeData[currentIndex].risk = finalRisk;
+        cnaeData[currentIndex].hasQuestions = false; // Remove a necessidade de novas perguntas
+        initTable();
+        filterTable();
+        closeModal();
+      }
+    }
+
+    function resetFilters() {
+      document.getElementById('search').value = '';
+      document.getElementById('section').value = '';
+      document.getElementById('risk').value = '';
+      localStorage.removeItem('searchFilter');
+      localStorage.removeItem('sectionFilter');
+      localStorage.removeItem('riskFilter');
+      filterTable();
+    }
+
+    // Exporta os dados da tabela para CSV
+    function exportData() {
+      const table = document.querySelector('.data-table');
+      const rows = table.querySelectorAll('tr');
+      const headers = Array.from(rows[0].querySelectorAll('th')).map(th => th.textContent).join(',');
+      const dataRows = Array.from(rows).slice(1).map(row => {
+        return Array.from(row.querySelectorAll('td')).map(td => td.textContent).join(',');
+      }).join('\n');
+      const csvContent = headers + '\n' + dataRows;
+      const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "consulta_cnaes.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Função para ordenar a tabela com base na coluna selecionada
+    function sortTable(columnIndex) {
+      const table = document.querySelector('.data-table');
+      const tbody = table.querySelector('tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const currentSort = table.dataset.sortColumn === String(columnIndex) ? table.dataset.sortOrder : null;
+      const newSortOrder = currentSort === 'asc' ? 'desc' : 'asc';
+      rows.sort((a, b) => {
+        const cellA = a.querySelectorAll('td')[columnIndex].textContent.toLowerCase();
+        const cellB = b.querySelectorAll('td')[columnIndex].textContent.toLowerCase();
+        return newSortOrder === 'asc' ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+      });
+      tbody.innerHTML = '';
+      rows.forEach(row => tbody.appendChild(row));
+      table.dataset.sortColumn = columnIndex;
+      table.dataset.sortOrder = newSortOrder;
+      table.querySelectorAll('th').forEach((th, index) => {
+        if (index !== columnIndex) {
+          th.classList.remove('sort-asc', 'sort-desc');
+        }
+      });
+      const header = table.querySelector(`th:nth-child(${columnIndex + 1})`);
+      header.classList.remove(currentSort === 'asc' ? 'sort-desc' : 'sort-asc');
+      header.classList.add(newSortOrder === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+
+    // Salva os filtros no localStorage
+    function saveFilters() {
+      localStorage.setItem('searchFilter', document.getElementById('search').value);
+      localStorage.setItem('sectionFilter', document.getElementById('section').value);
+      localStorage.setItem('riskFilter', document.getElementById('risk').value);
+    }
+
+    // Carrega os filtros salvos ao iniciar a página
+    function loadFilters() {
+      const search = localStorage.getItem('searchFilter') || '';
+      const section = localStorage.getItem('sectionFilter') || '';
+      const risk = localStorage.getItem('riskFilter') || '';
+      document.getElementById('search').value = search;
+      document.getElementById('section').value = section;
+      document.getElementById('risk').value = risk;
+      filterTable();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initTable();
+      loadFilters();
+      document.getElementById('search').addEventListener('input', filterTable);
+      document.getElementById('section').addEventListener('change', filterTable);
+      document.getElementById('risk').addEventListener('change', filterTable);
+    });
+
+    // Fecha os modais ao clicar fora das caixas
+    window.addEventListener('click', (e) => {
+      const legislationModal = document.getElementById('legislationModal');
+      if (e.target === legislationModal) closeLegislationModal();
+      const riskModal = document.getElementById('riskModal');
+      if (e.target === riskModal) closeModal();
+    });
+  </script>
+</body>
+</html>
